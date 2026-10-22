@@ -307,6 +307,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 56 : 36,
     paddingBottom: 96,
+    maxWidth: 680,
+    width: '100%',
+    alignSelf: 'center',
   },
   centered: {
     flex: 1,

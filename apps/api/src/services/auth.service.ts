@@ -46,6 +46,7 @@ export class AuthService {
       success: true,
       message: 'OTP sent successfully. Please check server console in development.',
       expiresInSeconds: env.OTP_EXPIRY_MINUTES * 60,
+      ...(env.NODE_ENV === 'development' ? { devOtp: rawOtp } : {}),
     };
   }
 

@@ -14,15 +14,21 @@ export const LoanCard: React.FC<LoanCardProps> = ({ loan, onRepayPress, onReceip
   const isRepaid = loan.status === 'REPAID';
   const isOverdue = loan.isOverdue;
 
-  // Format Due Date (e.g., 25 Oct 2026)
-  const dueDateObj = new Date(loan.dueDate);
-  const formattedDueDate = isNaN(dueDateObj.getTime())
-    ? loan.dueDate
-    : dueDateObj.toLocaleDateString('en-IN', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      });
+  // Format Due Date strictly by calendar parts to prevent timezone offsets
+  let formattedDueDate = loan.dueDate;
+  try {
+    const datePart = loan.dueDate.split('T')[0];
+    const parts = datePart.split('-');
+    if (parts.length === 3) {
+      const year = parts[0];
+      const monthIdx = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      formattedDueDate = `${day} ${monthNames[monthIdx] || parts[1]} ${year}`;
+    }
+  } catch {
+    formattedDueDate = loan.dueDate;
+  }
 
   const numericAmount = parseFloat(loan.amount || '0');
   const formattedAmount = isNaN(numericAmount)

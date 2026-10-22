@@ -22,7 +22,7 @@ import type { RootStackParamList } from '../types/index';
 type Props = NativeStackScreenProps<RootStackParamList, 'Otp'>;
 
 export const OtpScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { phoneNumber } = route.params;
+  const { phoneNumber, devOtp } = route.params;
   const { login } = useAuth();
 
   const [otp, setOtp] = useState('');
@@ -32,6 +32,14 @@ export const OtpScreen: React.FC<Props> = ({ route, navigation }) => {
   const [resendCooldown, setResendCooldown] = useState(30);
 
   const inputRef = useRef<any>(null);
+
+  // Focus input on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -44,26 +52,24 @@ export const OtpScreen: React.FC<Props> = ({ route, navigation }) => {
     return () => clearInterval(interval);
   }, [resendCooldown]);
 
-  const handleVerify = async () => {
-    Keyboard.dismiss();
+  const handleVerify = async (codeToVerify?: string) => {
+    if (Platform.OS !== 'web') {
+      Keyboard.dismiss();
+    }
     setErrorMessage(null);
 
-    const cleanedOtp = otp.trim().replace(/\D/g, '');
-    if (cleanedOtp.length !== 6) {
+    const targetCode = (codeToVerify || otp).trim().replace(/\D/g, '');
+    if (targetCode.length !== 6) {
       setErrorMessage('Please enter the full 6-digit verification code');
       return;
     }
 
     setIsLoading(true);
     try {
-      const res = await api.auth.verifyOtp(phoneNumber, cleanedOtp);
+      const res = await api.auth.verifyOtp(phoneNumber, targetCode);
       if (res.success && res.token && res.user) {
+        // Authenticating automatically switches React Navigation stack to Dashboard
         await login(res.token, res.user);
-        // Auth state transition navigates automatically or:
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Dashboard' }],
-        });
       }
     } catch (err: any) {
       if (err instanceof ApiError) {
@@ -94,20 +100,28 @@ export const OtpScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
-  return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+  const handleAutofillDevOtp = (code: string) => {
+    setOtp(code);
+    handleVerify(code);
+  };
+
+  const content = (
+    <KeyboardAvoidingView
+      style={styles.keyboardContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <View style={styles.centerWrapper}>
           {/* Back Button */}
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
+            <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
 
           <View style={styles.header}>
@@ -129,54 +143,67 @@ export const OtpScreen: React.FC<Props> = ({ route, navigation }) => {
               </View>
             )}
 
-            {/* OTP Input Display */}
-            <TouchableOpacity
-              activeOpacity={1}
-              onPress={() => inputRef.current?.focus()}
-              style={styles.otpBoxesRow}
-            >
-              {[0, 1, 2, 3, 4, 5].map((index) => {
-                const digit = otp[index] || '';
-                const isFocused = otp.length === index;
-                return (
-                  <View
-                    key={index}
-                    style={[
-                      styles.otpBox,
-                      digit ? styles.otpBoxFilled : null,
-                      isFocused ? styles.otpBoxFocused : null,
-                    ]}
-                  >
-                    <Text style={styles.otpDigit}>{digit}</Text>
-                  </View>
-                );
-              })}
-            </TouchableOpacity>
+            {/* Quick Autofill banner if devOtp was provided */}
+            {devOtp && (
+              <TouchableOpacity
+                style={styles.devAutofillPill}
+                onPress={() => handleAutofillDevOtp(devOtp)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="flash" size={16} color={colors.primary} />
+                <Text style={styles.devAutofillText}>
+                  Dev Mode: Click to Auto-fill <Text style={{ fontWeight: '800' }}>{devOtp}</Text>
+                </Text>
+              </TouchableOpacity>
+            )}
 
-            {/* Hidden Input to capture native keyboard keystrokes */}
-            <TextInput
-              ref={inputRef}
-              style={styles.hiddenInput}
-              value={otp}
-              onChangeText={(text) => {
-                const filtered = text.replace(/\D/g, '').slice(0, 6);
-                setOtp(filtered);
-                if (errorMessage) setErrorMessage(null);
-                if (filtered.length === 6) {
-                  // Optional auto-submit when 6 digits are typed
-                }
-              }}
-              keyboardType="number-pad"
-              maxLength={6}
-              autoFocus
-            />
+            {/* OTP Input Display with full click overlay */}
+            <View style={styles.otpInputContainer}>
+              <View style={styles.otpBoxesRow}>
+                {[0, 1, 2, 3, 4, 5].map((index) => {
+                  const digit = otp[index] || '';
+                  const isFocused = otp.length === index;
+                  return (
+                    <View
+                      key={index}
+                      style={[
+                        styles.otpBox,
+                        digit ? styles.otpBoxFilled : null,
+                        isFocused ? styles.otpBoxFocused : null,
+                      ]}
+                    >
+                      <Text style={styles.otpDigit}>{digit}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* Full overlay input so clicking anywhere captures input */}
+              <TextInput
+                ref={inputRef}
+                style={styles.otpOverlayInput}
+                value={otp}
+                onChangeText={(text) => {
+                  const filtered = text.replace(/\D/g, '').slice(0, 6);
+                  setOtp(filtered);
+                  if (errorMessage) setErrorMessage(null);
+                  if (filtered.length === 6) {
+                    handleVerify(filtered);
+                  }
+                }}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+                caretHidden
+              />
+            </View>
 
             <TouchableOpacity
               style={[
                 styles.verifyButton,
                 (otp.length !== 6 || isLoading) && styles.disabledButton,
               ]}
-              onPress={handleVerify}
+              onPress={() => handleVerify()}
               disabled={otp.length !== 6 || isLoading}
               activeOpacity={0.8}
             >
@@ -206,12 +233,22 @@ export const OtpScreen: React.FC<Props> = ({ route, navigation }) => {
             <View style={styles.devConsoleNote}>
               <Ionicons name="terminal-outline" size={16} color={colors.primaryDark} />
               <Text style={styles.devConsoleText}>
-                Check your backend server terminal to see the printed 6-digit mock OTP code.
+                Mock OTP is also printed in your Express server terminal.
               </Text>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+
+  if (Platform.OS === 'web') {
+    return <View style={styles.container}>{content}</View>;
+  }
+
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>{content}</View>
     </TouchableWithoutFeedback>
   );
 };
@@ -221,26 +258,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  keyboardContainer: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 32,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centerWrapper: {
+    width: '100%',
+    maxWidth: 440,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 12,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
   },
   iconCircle: {
     width: 64,
@@ -251,13 +296,13 @@ const styles = StyleSheet.create({
     borderColor: colors.primaryBorder,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   title: {
     fontSize: 24,
     fontWeight: '800',
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 14,
@@ -286,7 +331,7 @@ const styles = StyleSheet.create({
         elevation: 3,
       },
       web: {
-        boxShadow: '0 4px 16px rgba(15, 23, 42, 0.06)',
+        boxShadow: '0 4px 20px rgba(15, 23, 42, 0.08)',
       },
     }),
   },
@@ -298,7 +343,7 @@ const styles = StyleSheet.create({
     borderColor: colors.overdueBorder,
     borderRadius: 12,
     padding: 12,
-    marginBottom: 20,
+    marginBottom: 16,
     gap: 8,
   },
   errorText: {
@@ -307,13 +352,34 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
+  devAutofillPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1.5,
+    borderColor: colors.primaryBorder,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 18,
+    gap: 8,
+    justifyContent: 'center',
+  },
+  devAutofillText: {
+    fontSize: 13,
+    color: colors.primaryDark,
+    fontWeight: '600',
+  },
+  otpInputContainer: {
+    position: 'relative',
+    marginBottom: 20,
+  },
   otpBoxesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
   },
   otpBox: {
-    width: 44,
+    width: 46,
     height: 52,
     borderRadius: 12,
     borderWidth: 1.5,
@@ -335,25 +401,33 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
   },
-  hiddenInput: {
+  otpOverlayInput: {
     position: 'absolute',
-    width: 1,
-    height: 1,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     opacity: 0,
+    fontSize: 24,
+    ...Platform.select({
+      web: {
+        cursor: 'text',
+      } as any,
+    }),
   },
   verifyButton: {
-    height: 52,
+    height: 50,
     backgroundColor: colors.primary,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   disabledButton: {
     opacity: 0.5,
   },
   verifyButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -361,33 +435,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   resendPrompt: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   cooldownText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.textMuted,
   },
   resendButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.primary,
   },
   devConsoleNote: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.surfaceSubtle,
     padding: 12,
     borderRadius: 12,
     gap: 8,
   },
   devConsoleText: {
     fontSize: 12,
-    color: colors.primaryDark,
+    color: colors.textSecondary,
     lineHeight: 16,
     flex: 1,
   },

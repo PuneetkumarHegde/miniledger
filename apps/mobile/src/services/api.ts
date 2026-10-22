@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { getActiveBaseUrl } from '../config/api';
 import { storage } from './storage';
 import { Loan, LoanSummary, User } from '../types/index';
@@ -90,7 +91,7 @@ async function request<T>(
 
 export const api = {
   auth: {
-    async requestOtp(phoneNumber: string): Promise<{ success: boolean; message: string; expiresInSeconds: number }> {
+    async requestOtp(phoneNumber: string): Promise<{ success: boolean; message: string; expiresInSeconds: number; devOtp?: string }> {
       return request('/api/auth/request-otp', {
         method: 'POST',
         body: JSON.stringify({ phoneNumber }),
@@ -159,11 +160,17 @@ export const api = {
       const token = await storage.getToken();
 
       const formData = new FormData();
-      formData.append('receipt', {
-        uri: fileUri,
-        name: filename,
-        type: mimeType,
-      } as any);
+      if (Platform.OS === 'web') {
+        const fileFetch = await fetch(fileUri);
+        const blob = await fileFetch.blob();
+        formData.append('receipt', blob, filename);
+      } else {
+        formData.append('receipt', {
+          uri: fileUri,
+          name: filename,
+          type: mimeType,
+        } as any);
+      }
 
       const response = await fetch(`${baseUrl.replace(/\/+$/, '')}/api/upload`, {
         method: 'POST',

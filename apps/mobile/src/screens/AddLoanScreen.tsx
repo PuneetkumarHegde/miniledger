@@ -146,13 +146,13 @@ export const AddLoanScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+  const content = (
+    <KeyboardAvoidingView
+      style={styles.keyboardContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <View style={styles.centerWrapper}>
           {/* Header */}
           <View style={styles.headerRow}>
             <TouchableOpacity
@@ -302,8 +302,18 @@ export const AddLoanScreen: React.FC<Props> = ({ navigation }) => {
               )}
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+
+  if (Platform.OS === 'web') {
+    return <View style={styles.container}>{content}</View>;
+  }
+
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>{content}</View>
     </TouchableWithoutFeedback>
   );
 };
@@ -313,11 +323,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  keyboardContainer: {
+    flex: 1,
+  },
+  centerWrapper: {
+    width: '100%',
+    maxWidth: 480,
+  },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 56 : 36,
     paddingBottom: 40,
+    alignItems: 'center',
   },
   headerRow: {
     flexDirection: 'row',

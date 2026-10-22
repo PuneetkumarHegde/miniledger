@@ -41,7 +41,7 @@ export interface ApiResponse<T> {
 
 export type RootStackParamList = {
   Login: undefined;
-  Otp: { phoneNumber: string };
+  Otp: { phoneNumber: string; devOtp?: string };
   Dashboard: undefined;
   AddLoan: undefined;
 };

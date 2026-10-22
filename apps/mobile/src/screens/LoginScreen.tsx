@@ -32,14 +32,28 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [serverModalVisible, setServerModalVisible] = useState(false);
 
+  const cleanPhoneInput = (raw: string) => {
+    let cleaned = raw.trim().replace(/[\s\-\(\)]/g, '');
+    if (cleaned.startsWith('+91')) {
+      cleaned = cleaned.slice(3);
+    } else if (cleaned.startsWith('91') && cleaned.length > 10) {
+      cleaned = cleaned.slice(2);
+    } else if (cleaned.startsWith('0') && cleaned.length === 11) {
+      cleaned = cleaned.slice(1);
+    }
+    return cleaned;
+  };
+
   const handleContinue = async () => {
-    Keyboard.dismiss();
+    if (Platform.OS !== 'web') {
+      Keyboard.dismiss();
+    }
     setErrorMessage(null);
 
-    const cleanedNumber = phoneNumber.trim().replace(/\D/g, '');
+    const cleanedNumber = cleanPhoneInput(phoneNumber);
 
     if (!cleanedNumber) {
-      setErrorMessage('Please enter your phone number');
+      setErrorMessage('Please enter your mobile phone number');
       return;
     }
 
@@ -48,35 +62,38 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
 
-    const fullPhoneNumber = `${countryCode}${cleanedNumber.startsWith('0') ? cleanedNumber.slice(1) : cleanedNumber}`;
+    const fullPhoneNumber = `${countryCode}${cleanedNumber}`;
 
     setIsLoading(true);
     try {
       const res = await api.auth.requestOtp(fullPhoneNumber);
       if (res.success) {
-        navigation.navigate('Otp', { phoneNumber: fullPhoneNumber });
+        navigation.navigate('Otp', {
+          phoneNumber: fullPhoneNumber,
+          devOtp: res.devOtp,
+        });
       }
     } catch (err: any) {
       if (err instanceof ApiError) {
         setErrorMessage(err.message);
       } else {
-        setErrorMessage('Failed to connect to authentication server. Please verify backend is running.');
+        setErrorMessage('Failed to connect to authentication server. Please check backend connection.');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+  const content = (
+    <KeyboardAvoidingView
+      style={styles.keyboardContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={styles.centerWrapper}>
           {/* Top Settings Bar */}
           <View style={styles.topBar}>
             <TouchableOpacity
@@ -84,7 +101,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               onPress={() => setServerModalVisible(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
+              <Ionicons name="settings-outline" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -101,7 +118,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Sign in with Phone</Text>
             <Text style={styles.cardSubtitle}>
-              We'll send a 6-digit mock OTP to verify your account
+              Enter your mobile number to receive a 6-digit verification code
             </Text>
 
             {errorMessage && (
@@ -127,7 +144,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
                   setPhoneNumber(text);
                   if (errorMessage) setErrorMessage(null);
                 }}
-                maxLength={12}
+                maxLength={15}
                 editable={!isLoading}
                 returnKeyType="done"
                 onSubmitEditing={handleContinue}
@@ -151,19 +168,29 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
 
             <View style={styles.mockOtpNote}>
-              <Ionicons name="code-slash" size={16} color={colors.primary} />
+              <Ionicons name="terminal-outline" size={16} color={colors.primary} />
               <Text style={styles.mockOtpText}>
-                Mock OTP is printed to the Express server terminal console upon request.
+                Mock OTP is logged in your Express server terminal for instant testing.
               </Text>
             </View>
           </View>
-        </ScrollView>
+        </View>
+      </ScrollView>
 
-        <ServerConfigModal
-          visible={serverModalVisible}
-          onClose={() => setServerModalVisible(false)}
-        />
-      </KeyboardAvoidingView>
+      <ServerConfigModal
+        visible={serverModalVisible}
+        onClose={() => setServerModalVisible(false)}
+      />
+    </KeyboardAvoidingView>
+  );
+
+  if (Platform.OS === 'web') {
+    return <View style={styles.container}>{content}</View>;
+  }
+
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>{content}</View>
     </TouchableWithoutFeedback>
   );
 };
@@ -173,15 +200,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  keyboardContainer: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centerWrapper: {
+    width: '100%',
+    maxWidth: 440,
   },
   topBar: {
     alignItems: 'flex-end',
-    paddingVertical: 12,
+    marginBottom: 8,
   },
   settingsButton: {
     padding: 8,
@@ -192,28 +227,28 @@ const styles = StyleSheet.create({
   },
   brandContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
   },
   logoBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
+    width: 68,
+    height: 68,
+    borderRadius: 22,
     backgroundColor: colors.primarySoft,
     borderWidth: 1.5,
     borderColor: colors.primaryBorder,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   brandTitle: {
     fontSize: 28,
     fontWeight: '800',
     color: colors.textPrimary,
     letterSpacing: -0.5,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   brandTagline: {
-    fontSize: 15,
+    fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
   },
@@ -234,7 +269,7 @@ const styles = StyleSheet.create({
         elevation: 3,
       },
       web: {
-        boxShadow: '0 4px 16px rgba(15, 23, 42, 0.06)',
+        boxShadow: '0 4px 20px rgba(15, 23, 42, 0.08)',
       },
     }),
   },
@@ -242,12 +277,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 20,
+    lineHeight: 18,
   },
   errorBox: {
     flexDirection: 'row',
@@ -306,10 +342,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: colors.textPrimary,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      } as any,
+    }),
   },
   continueButton: {
     flexDirection: 'row',
-    height: 52,
+    height: 50,
     backgroundColor: colors.primary,
     borderRadius: 14,
     justifyContent: 'center',
@@ -320,7 +361,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   continueButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
   },
