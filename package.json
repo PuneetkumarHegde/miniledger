@@ -1,0 +1,28 @@
+{
+  "name": "miniledger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MiniLedger — Full-Stack Friend Loan Tracker",
+  "scripts": {
+    "dev:api": "npm --prefix apps/api run dev",
+    "dev:mobile": "npm --prefix apps/mobile start",
+    "dev:web": "npm --prefix apps/mobile run web",
+    "dev:android": "npm --prefix apps/mobile run android",
+    "dev:ios": "npm --prefix apps/mobile run ios",
+    "test": "npm --prefix apps/api test",
+    "build:api": "npm --prefix apps/api run build",
+    "prisma:migrate": "npm --prefix apps/api run prisma:migrate",
+    "prisma:studio": "npm --prefix apps/api run prisma:studio"
+  },
+  "keywords": [
+    "miniledger",
+    "react-native",
+    "expo",
+    "express",
+    "typescript",
+    "prisma",
+    "postgresql"
+  ],
+  "author": "Puneet Kumar",
+  "license": "MIT"
+}
