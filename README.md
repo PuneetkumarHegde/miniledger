@@ -4,6 +4,53 @@ MiniLedger is a full-stack financial tracking application designed to help users
 
 ---
 
+## ⚡ Quick Start: How to Run in 10 Seconds
+
+### Option A: 1-Click Launchers (Windows)
+In the root directory, simply double-click:
+1. **`start-backend.bat`** — Launches the Express API server at `http://localhost:4000`. Keep this window open to view printed mock OTP codes.
+2. **`start-web.bat`** — Opens the mobile app directly in your web browser at `http://localhost:8081`.
+3. *(Optional)* **`run-tests.bat`** — Runs all 13 automated API integration tests.
+
+### Option B: Command Line (PowerShell / Terminal)
+```bash
+# Terminal 1: Start Express Backend
+cd apps/api
+npm run dev
+
+# Terminal 2: Start Mobile / Web App
+cd apps/mobile
+npm run web     # For desktop browser
+# OR
+npm start       # To scan QR code with Expo Go on physical mobile phone
+```
+
+---
+
+## 📦 How to Push this Repository to GitHub
+
+Your local repository is fully committed and ready to be pushed to your GitHub account (`PuneetkumarHegde`).
+
+### Step 1: Create an Empty Repository on GitHub
+1. Go to: **[https://github.com/new](https://github.com/new)**
+2. Set **Repository name**: `miniledger`
+3. Select **Public** or **Private**.
+4. ⚠️ **Do NOT** check *"Add a README file"*, *"Add .gitignore"*, or *"Choose a license"* (the project already contains complete versions of all three).
+5. Click **Create repository**.
+
+### Step 2: Push the Code
+Run either the launcher or the terminal command:
+
+- **Option A (1-Click)**: Double-click **`push-to-github.bat`** and press **Enter**.
+- **Option B (Terminal)**:
+  ```bash
+  git remote add origin https://github.com/PuneetkumarHegde/miniledger.git
+  git branch -M main
+  git push -u origin main
+  ```
+
+---
+
 ## Table of Contents
 
 1. [Project Overview & Key Features](#1-project-overview--key-features)
