@@ -41,3 +41,5 @@ app.use((_req: Request, res: Response) => {
 
 // Centralized Error Handling
 app.use(errorHandler);
+
+export default app;

@@ -14,6 +14,9 @@ export function getDefaultBaseUrl(): string {
 
   // 2. Platform-aware fallbacks
   if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes(':8081')) {
+      return window.location.origin;
+    }
     return `http://localhost:${PORT}`;
   }
 

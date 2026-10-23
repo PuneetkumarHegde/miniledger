@@ -600,3 +600,60 @@ Follow these steps for a live interview or review walkthrough:
 8. **Show Automated Test Suite**:
    - In a terminal, run `npm test`.
    - Show that all 13 integration tests pass cleanly in under 2 seconds.
+
+---
+
+## 15. Deploying to Vercel (Production Setup & Cloud Database)
+
+### ❓ Is a Database Needed on Vercel?
+**YES, a database is strictly required.**
+
+Here is why:
+1. **Localhost is unreachable from the Cloud**: When developing locally, the backend connects to `localhost:5432` on your machine. Vercel runs in AWS cloud data centers, which cannot access your local laptop's `localhost`.
+2. **Serverless Functions are Ephemeral**: Vercel runs the backend as stateless serverless functions. Any in-memory storage disappears once a function finishes responding.
+3. **MiniLedger Relational Core**: MiniLedger requires PostgreSQL to persist user profiles, phone OTP sessions, loans, repayments, and audit calculations.
+
+### 🆓 Recommended Free Cloud PostgreSQL Databases
+You can set up a free managed cloud PostgreSQL database in under 60 seconds (no credit card required):
+- **[Neon.tech](https://neon.tech)** *(Recommended)*: Free tier, instant provisioning, optimized for serverless Prisma connections with SSL pooling.
+- **[Supabase](https://supabase.com)**: Free tier PostgreSQL with connection pooling.
+- **[Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres)**: Built directly into Vercel dashboard.
+
+---
+
+### 🚀 Step-by-Step Vercel Deployment Guide
+
+#### Step 1: Provision your Free Database (Neon.tech)
+1. Sign up for free at [neon.tech](https://neon.tech).
+2. Create a new project (e.g. `miniledger-db`).
+3. Copy your PostgreSQL connection string:
+   ```
+   postgresql://username:password@ep-xyz-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require
+   ```
+
+#### Step 2: Initialize Database Schema
+From your local terminal, apply the Prisma schema to your cloud database:
+```bash
+# Set your DATABASE_URL in apps/api/.env or export it in your shell:
+npx --prefix apps/api prisma db push
+```
+*(This creates all tables: `User`, `OtpRecord`, `Loan`, `Repayment` in your cloud database instantly.)*
+
+#### Step 3: Deploy to Vercel
+1. Go to [vercel.com](https://vercel.com) and log in.
+2. Click **Add New...** -> **Project**.
+3. Import your GitHub repository: `PuneetkumarHegde/miniledger`.
+4. Leave **Framework Preset** as **Other** (or Auto-detected).
+5. In **Environment Variables**, add:
+   | Key | Value | Description |
+   | :--- | :--- | :--- |
+   | `DATABASE_URL` | `postgresql://...neon.tech/neondb?sslmode=require` | Your Cloud PostgreSQL connection string |
+   | `JWT_SECRET` | `any-secure-random-string-at-least-32-chars` | Signing secret for session tokens |
+   | `NODE_ENV` | `production` | Production environment flag |
+6. Click **Deploy**!
+
+#### Architecture on Vercel:
+- **Frontend**: The Expo React Native Web app is pre-rendered and served as an ultra-fast static SPA directly from Vercel's global CDN (`apps/mobile/dist`).
+- **Backend API**: The Express server runs serverless via `api/index.ts` handling all `/api/*` endpoints.
+- **Unified Domain**: Both frontend and backend share the same Vercel URL (e.g. `https://miniledger.vercel.app`), completely eliminating cross-origin (CORS) complications.
+
