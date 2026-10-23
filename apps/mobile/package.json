@@ -28,6 +28,7 @@
     "web": "expo start --web",
     "build:web": "expo export -p web",
     "build:vercel": "expo export -p web",
+    "vercel-build": "expo export -p web",
     "build": "expo export -p web"
   },
   "private": true
