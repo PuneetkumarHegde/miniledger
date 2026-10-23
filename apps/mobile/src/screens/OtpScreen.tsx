@@ -72,8 +72,11 @@ export const OtpScreen: React.FC<Props> = ({ route, navigation }) => {
         await login(res.token, res.user);
       }
     } catch (err: any) {
-      if (err instanceof ApiError) {
-        setErrorMessage(err.message);
+      const msg = err?.message;
+      if (typeof msg === 'string') {
+        setErrorMessage(msg);
+      } else if (msg && typeof msg === 'object') {
+        setErrorMessage(msg.message || JSON.stringify(msg));
       } else {
         setErrorMessage('Verification failed. Please check the code and try again.');
       }

@@ -79,9 +79,22 @@ async function request<T>(
   }
 
   if (!response.ok) {
-    const errorMessage =
-      (data && typeof data === 'object' && (data.error || data.message)) ||
-      `Request failed with status ${response.status}`;
+    let errorMessage = `Request failed with status ${response.status}`;
+    if (data && typeof data === 'object') {
+      if (typeof data.error === 'string') {
+        errorMessage = data.error;
+      } else if (data.error && typeof data.error === 'object' && typeof data.error.message === 'string') {
+        errorMessage = data.error.message;
+      } else if (typeof data.message === 'string') {
+        errorMessage = data.message;
+      } else if (data.details && Array.isArray(data.details)) {
+        errorMessage = data.details.map((d: any) => d.message || d.field).join(', ');
+      } else if (data.error) {
+        errorMessage = JSON.stringify(data.error);
+      }
+    } else if (typeof data === 'string' && data.trim().length > 0) {
+      errorMessage = data.slice(0, 200);
+    }
     const details = data && typeof data === 'object' ? data.details : undefined;
     throw new ApiError(errorMessage, response.status, details);
   }

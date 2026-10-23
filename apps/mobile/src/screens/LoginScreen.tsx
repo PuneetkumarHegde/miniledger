@@ -74,10 +74,13 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         });
       }
     } catch (err: any) {
-      if (err instanceof ApiError) {
-        setErrorMessage(err.message);
+      const msg = err?.message;
+      if (typeof msg === 'string') {
+        setErrorMessage(msg);
+      } else if (msg && typeof msg === 'object') {
+        setErrorMessage(msg.message || JSON.stringify(msg));
       } else {
-        setErrorMessage('Failed to connect to authentication server. Please check backend connection.');
+        setErrorMessage('Failed to connect to authentication server. Please check database and backend.');
       }
     } finally {
       setIsLoading(false);
