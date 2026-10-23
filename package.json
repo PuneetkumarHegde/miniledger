@@ -15,9 +15,9 @@
     "prisma:deploy": "npm --prefix apps/api run prisma:deploy",
     "prisma:studio": "npm --prefix apps/api run prisma:studio",
     "prisma:generate": "npm --prefix apps/api run prisma:generate",
-    "build": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web",
-    "build:vercel": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web",
-    "vercel-build": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web"
+    "build": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web && node -e \"require('fs').writeFileSync('apps/mobile/dist/index.js', 'module.exports = require(\\\"../../index.ts\\\");');\"",
+    "build:vercel": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web && node -e \"require('fs').writeFileSync('apps/mobile/dist/index.js', 'module.exports = require(\\\"../../index.ts\\\");');\"",
+    "vercel-build": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web && node -e \"require('fs').writeFileSync('apps/mobile/dist/index.js', 'module.exports = require(\\\"../../index.ts\\\");');\""
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

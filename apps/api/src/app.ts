@@ -1,3 +1,5 @@
+import path from 'node:path';
+import fs from 'node:fs';
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.routes.js';
@@ -31,12 +33,28 @@ app.use('/api/auth', authRoutes);
 app.use('/api/loans', loanRoutes);
 app.use('/api/upload', uploadRoutes);
 
-// 404 Catch-All
-app.use((_req: Request, res: Response) => {
+// Static Web Files (Expo Web Build)
+const distPath = path.resolve(process.cwd(), 'apps/mobile/dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+}
+
+// 404 Catch-All for API routes
+app.use('/api', (_req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     error: 'API route not found',
   });
+});
+
+// SPA Fallback for Web Frontend
+app.get('*', (_req: Request, res: Response) => {
+  const indexPath = path.join(distPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(200).send('MiniLedger API is running. Build web assets with npm run build.');
+  }
 });
 
 // Centralized Error Handling
