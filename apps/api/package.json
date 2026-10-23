@@ -11,6 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
+    "build:vercel": "prisma generate && tsc",
     "test": "vitest run",
     "test:watch": "vitest"
   },

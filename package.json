@@ -14,9 +14,10 @@
     "prisma:migrate": "npm --prefix apps/api run prisma:migrate",
     "prisma:deploy": "npm --prefix apps/api run prisma:deploy",
     "prisma:studio": "npm --prefix apps/api run prisma:studio",
-    "prisma:generate": "prisma generate --schema=apps/api/prisma/schema.prisma",
-    "build:vercel": "npm run prisma:generate && npm --prefix apps/mobile run build:web",
-    "vercel-build": "npm run prisma:generate && npm --prefix apps/mobile run build:web"
+    "prisma:generate": "npm --prefix apps/api run prisma:generate",
+    "build": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web",
+    "build:vercel": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web",
+    "vercel-build": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

@@ -26,7 +26,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "expo export -p web"
+    "build:web": "expo export -p web",
+    "build:vercel": "expo export -p web",
+    "build": "expo export -p web"
   },
   "private": true
 }

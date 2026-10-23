@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:vercel",
+  "installCommand": "npm install && npm --prefix apps/api install && npm --prefix apps/mobile install",
+  "buildCommand": "npm run build",
   "outputDirectory": "apps/mobile/dist",
   "rewrites": [
     {
