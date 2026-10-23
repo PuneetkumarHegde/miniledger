@@ -1,3 +1,4 @@
-import app from '../apps/api/src/app';
+import express from 'express';
+import app from '../apps/api/src/app.js';
 
 export default app;

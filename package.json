@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "MiniLedger — Full-Stack Friend Loan Tracker",
+  "main": "index.ts",
   "scripts": {
     "dev:api": "npm --prefix apps/api run dev",
     "dev:mobile": "npm --prefix apps/mobile start",
@@ -15,9 +16,9 @@
     "prisma:deploy": "npm --prefix apps/api run prisma:deploy",
     "prisma:studio": "npm --prefix apps/api run prisma:studio",
     "prisma:generate": "npm --prefix apps/api run prisma:generate",
-    "build": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web && node -e \"require('fs').writeFileSync('apps/mobile/dist/index.js', 'module.exports = require(\\\"../../index.ts\\\");');\"",
-    "build:vercel": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web && node -e \"require('fs').writeFileSync('apps/mobile/dist/index.js', 'module.exports = require(\\\"../../index.ts\\\");');\"",
-    "vercel-build": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web && node -e \"require('fs').writeFileSync('apps/mobile/dist/index.js', 'module.exports = require(\\\"../../index.ts\\\");');\""
+    "build": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web",
+    "build:vercel": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web",
+    "vercel-build": "npm --prefix apps/api run prisma:generate && npm --prefix apps/mobile run build:web"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
