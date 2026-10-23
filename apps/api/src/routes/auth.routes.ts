@@ -5,8 +5,13 @@ import { authenticate } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-// POST /api/auth/request-otp
-router.post('/request-otp', async (req: Request, res: Response, next: NextFunction) => {
+// Handle preflight OPTIONS for auth routes
+router.options('*', (_req: Request, res: Response) => {
+  res.sendStatus(204);
+});
+
+// POST /api/auth/request-otp (with aliases)
+router.post(['/request-otp', '/otp/request', '/otp'], async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validated = requestOtpSchema.parse(req.body);
     const result = await AuthService.requestOtp(validated.phoneNumber);
@@ -16,8 +21,8 @@ router.post('/request-otp', async (req: Request, res: Response, next: NextFuncti
   }
 });
 
-// POST /api/auth/verify-otp
-router.post('/verify-otp', async (req: Request, res: Response, next: NextFunction) => {
+// POST /api/auth/verify-otp (with aliases)
+router.post(['/verify-otp', '/otp/verify', '/verify'], async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validated = verifyOtpSchema.parse(req.body);
     const result = await AuthService.verifyOtp(validated.phoneNumber, validated.otp);

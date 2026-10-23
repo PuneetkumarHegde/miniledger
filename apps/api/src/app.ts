@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import express, { Application, Request, Response } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.routes.js';
 import loanRoutes from './routes/loan.routes.js';
@@ -13,14 +13,29 @@ export const app: Application = express();
 app.use(cors({
   origin: '*', // Allow Expo mobile client, web, and emulators
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
+// Respond to all preflight OPTIONS requests immediately with 204
+app.options('*', (_req: Request, res: Response) => {
+  res.sendStatus(204);
+});
+
+// Normalizer: strip any serverless function path wrappers like /index.ts
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.url.startsWith('/index.ts')) {
+    req.url = req.url.replace(/^\/index\.ts/, '') || '/';
+  } else if (req.url.startsWith('/api/index.ts')) {
+    req.url = req.url.replace(/^\/api\/index\.ts/, '') || '/';
+  }
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Health Check
-app.get('/health', (_req: Request, res: Response) => {
+app.get(['/health', '/api/health'], (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'healthy',
     service: 'MiniLedger API',
@@ -28,10 +43,15 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-// API Routes
+// API Routes (Mounted both with and without /api prefix for full compatibility)
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
 app.use('/api/loans', loanRoutes);
+app.use('/loans', loanRoutes);
+
 app.use('/api/upload', uploadRoutes);
+app.use('/upload', uploadRoutes);
 
 // Static Web Files (Expo Web Build)
 const distPath = path.resolve(process.cwd(), 'apps/mobile/dist');
@@ -39,8 +59,8 @@ if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 }
 
-// 404 Catch-All for API routes
-app.use('/api', (_req: Request, res: Response) => {
+// 404 Catch-All for API routes (only for unmatched API routes)
+app.use(['/api', '/auth', '/loans', '/upload'], (_req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     error: 'API route not found',
