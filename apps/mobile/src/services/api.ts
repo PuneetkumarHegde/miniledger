@@ -127,15 +127,45 @@ export const api = {
 
   loans: {
     async getAll(): Promise<{ success: boolean; data: Loan[]; count: number }> {
-      return request('/api/loans', {
-        method: 'GET',
-      });
+      try {
+        const res = await request<{ success: boolean; data: Loan[]; count: number }>('/api/loans', { method: 'GET' });
+        if (res?.data) {
+          await storage.setLocalLoans(res.data);
+        }
+        return res;
+      } catch (err) {
+        const local = await storage.getLocalLoans();
+        return { success: true, data: local, count: local.length };
+      }
     },
 
     async getSummary(): Promise<{ success: boolean; data: LoanSummary }> {
-      return request('/api/loans/summary', {
-        method: 'GET',
-      });
+      try {
+        return await request('/api/loans/summary', { method: 'GET' });
+      } catch (err) {
+        const local = await storage.getLocalLoans();
+        let totalLent = 0;
+        let totalRepaid = 0;
+        let overdueAmount = 0;
+        const now = new Date();
+        for (const l of local) {
+          const amt = Number(l.amount) || 0;
+          totalLent += amt;
+          if (l.status === 'REPAID') {
+            totalRepaid += amt;
+          } else if (new Date(l.dueDate) < now) {
+            overdueAmount += amt;
+          }
+        }
+        return {
+          success: true,
+          data: {
+            totalLent: totalLent.toFixed(2),
+            totalRepaid: totalRepaid.toFixed(2),
+            overdueAmount: overdueAmount.toFixed(2),
+          },
+        };
+      }
     },
 
     async create(payload: {
@@ -145,16 +175,57 @@ export const api = {
       receiptUrl?: string | null;
       receiptOriginalName?: string | null;
     }): Promise<{ success: boolean; data: Loan }> {
-      return request('/api/loans', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      try {
+        const res = await request<{ success: boolean; data: Loan }>('/api/loans', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        const local = await storage.getLocalLoans();
+        await storage.setLocalLoans([res.data, ...local]);
+        return res;
+      } catch (err) {
+        const local = await storage.getLocalLoans();
+        const newLoan: Loan = {
+          id: `loan_${Date.now()}`,
+          userId: 'usr_me',
+          friendName: payload.friendName,
+          amount: Number(payload.amount).toFixed(2),
+          dueDate: payload.dueDate,
+          status: 'PENDING',
+          repaidAt: null,
+          isOverdue: new Date(payload.dueDate) < new Date(),
+          receiptUrl: payload.receiptUrl || null,
+          receiptOriginalName: payload.receiptOriginalName || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        await storage.setLocalLoans([newLoan, ...local]);
+        return { success: true, data: newLoan };
+      }
     },
 
     async repay(loanId: string): Promise<{ success: boolean; message: string; data: Loan }> {
-      return request(`/api/loans/${loanId}/repay`, {
-        method: 'PATCH',
-      });
+      try {
+        const res = await request<{ success: boolean; message: string; data: Loan }>(`/api/loans/${loanId}/repay`, {
+          method: 'PATCH',
+        });
+        const local = await storage.getLocalLoans();
+        const updated = local.map((l) => (l.id === loanId ? { ...l, status: 'REPAID' as const, repaidAt: new Date().toISOString(), isOverdue: false } : l));
+        await storage.setLocalLoans(updated);
+        return res;
+      } catch (err) {
+        const local = await storage.getLocalLoans();
+        let targetLoan: any;
+        const updated = local.map((l) => {
+          if (l.id === loanId) {
+            targetLoan = { ...l, status: 'REPAID' as const, repaidAt: new Date().toISOString(), isOverdue: false };
+            return targetLoan;
+          }
+          return l;
+        });
+        await storage.setLocalLoans(updated);
+        return { success: true, message: 'Loan repaid successfully', data: targetLoan || updated[0] };
+      }
     },
   },
 

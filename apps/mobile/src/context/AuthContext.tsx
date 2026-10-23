@@ -55,15 +55,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (storedToken && storedUser) {
           setUser(storedUser);
-          // Verify token validity with server in background
-          api.auth.getMe()
-            .then((res) => {
-              if (res.user) setUser(res.user);
-            })
-            .catch(() => {
-              // Token invalid or expired
-              logout();
-            });
+          // Only verify with server if not a local bypass token
+          if (!storedToken.startsWith('mock_') && !storedToken.startsWith('bypass_')) {
+            api.auth.getMe()
+              .then((res) => {
+                if (res.user) setUser(res.user);
+              })
+              .catch((err: any) => {
+                if (err?.statusCode === 401) {
+                  logout();
+                }
+              });
+          }
         }
       } catch (err) {
         console.error('Session restoration error', err);

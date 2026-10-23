@@ -21,12 +21,18 @@ app.options('*', (_req: Request, res: Response) => {
   res.sendStatus(204);
 });
 
-// Normalizer: strip any serverless function path wrappers like /index.ts
+// Normalizer: strip any serverless function path wrappers like /index.ts or [...slug]
 app.use((req: Request, _res: Response, next: NextFunction) => {
   if (req.url.startsWith('/index.ts')) {
     req.url = req.url.replace(/^\/index\.ts/, '') || '/';
   } else if (req.url.startsWith('/api/index.ts')) {
     req.url = req.url.replace(/^\/api\/index\.ts/, '') || '/';
+  }
+
+  if (req.query && (req.query.slug || req.query['slug[]'])) {
+    const rawSlug = req.query.slug || req.query['slug[]'];
+    const slugStr = Array.isArray(rawSlug) ? rawSlug.join('/') : String(rawSlug);
+    req.url = `/api/${slugStr.replace(/^\/+/, '')}`;
   }
   next();
 });

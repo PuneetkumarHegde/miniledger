@@ -1,5 +1,16 @@
 {
   "version": 2,
   "installCommand": "npm install && npm --prefix apps/api install && npm --prefix apps/mobile install",
-  "buildCommand": "npm run build"
+  "buildCommand": "npm run build",
+  "outputDirectory": "apps/mobile/dist",
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }

@@ -71,9 +71,26 @@ export const storage = {
     }
   },
 
+  async getLocalLoans(): Promise<any[]> {
+    try {
+      const data = await AsyncStorage.getItem('@miniledger_local_loans');
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async setLocalLoans(loans: any[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem('@miniledger_local_loans', JSON.stringify(loans));
+    } catch (e) {
+      console.error('Failed to store local loans', e);
+    }
+  },
+
   async clearAll(): Promise<void> {
     try {
-      await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+      await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY, '@miniledger_local_loans']);
     } catch (e) {
       console.error('Failed to clear session storage', e);
     }
