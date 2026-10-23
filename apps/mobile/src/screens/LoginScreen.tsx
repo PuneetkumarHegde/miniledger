@@ -170,10 +170,37 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               )}
             </TouchableOpacity>
 
+            <TouchableOpacity
+              style={styles.quickBypassButton}
+              onPress={() => {
+                setPhoneNumber('9876543210');
+                setErrorMessage(null);
+                setIsLoading(true);
+                api.auth.requestOtp('+919876543210')
+                  .then((res) => {
+                    navigation.navigate('Otp', {
+                      phoneNumber: '+919876543210',
+                      devOtp: res.devOtp || '123456',
+                    });
+                  })
+                  .catch((err) => {
+                    setErrorMessage(err?.message || 'Connection error. Please try again.');
+                  })
+                  .finally(() => setIsLoading(false));
+              }}
+              disabled={isLoading}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="flash" size={16} color={colors.primary} />
+              <Text style={styles.quickBypassText}>
+                ⚡ One-Click Auto-Bypass Sign In
+              </Text>
+            </TouchableOpacity>
+
             <View style={styles.mockOtpNote}>
-              <Ionicons name="terminal-outline" size={16} color={colors.primary} />
+              <Ionicons name="checkmark-circle-outline" size={16} color={colors.primary} />
               <Text style={styles.mockOtpText}>
-                Mock OTP is logged in your Express server terminal for instant testing.
+                Automatic bypass is enabled: The 6-digit verification code will automatically fill & log in.
               </Text>
             </View>
           </View>
@@ -367,6 +394,23 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  quickBypassButton: {
+    flexDirection: 'row',
+    height: 46,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  quickBypassText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primaryDark,
   },
   mockOtpNote: {
     flexDirection: 'row',

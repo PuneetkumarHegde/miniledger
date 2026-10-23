@@ -41,6 +41,17 @@ export const OtpScreen: React.FC<Props> = ({ route, navigation }) => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Automatic OTP Bypass: Auto-fill and auto-verify immediately
+  useEffect(() => {
+    if (devOtp && devOtp.length === 6) {
+      setOtp(devOtp);
+      const autoTimer = setTimeout(() => {
+        handleVerify(devOtp);
+      }, 400);
+      return () => clearTimeout(autoTimer);
+    }
+  }, [devOtp]);
+
   // Resend cooldown timer
   useEffect(() => {
     let interval: any;
@@ -233,10 +244,25 @@ export const OtpScreen: React.FC<Props> = ({ route, navigation }) => {
               )}
             </View>
 
+            {devOtp && (
+              <TouchableOpacity
+                style={styles.autofillBanner}
+                onPress={() => handleAutofillDevOtp(devOtp)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="flash" size={20} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.autofillBannerTitle}>⚡ Auto-Bypass Code: {devOtp}</Text>
+                  <Text style={styles.autofillBannerSub}>Tap here to fill & log in immediately</Text>
+                </View>
+                <Ionicons name="arrow-forward-circle" size={24} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+
             <View style={styles.devConsoleNote}>
-              <Ionicons name="terminal-outline" size={16} color={colors.primaryDark} />
+              <Ionicons name="shield-checkmark-outline" size={16} color={colors.primaryDark} />
               <Text style={styles.devConsoleText}>
-                Mock OTP is also printed in your Express server terminal.
+                Automatic bypass is active. Your session token will be generated instantly.
               </Text>
             </View>
           </View>
@@ -453,6 +479,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: colors.primary,
+  },
+  autofillBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    gap: 12,
+  },
+  autofillBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  autofillBannerSub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   devConsoleNote: {
     flexDirection: 'row',
