@@ -3,6 +3,7 @@
 MiniLedger is a full-stack financial tracking application designed to help users track money they have lent to friends. It features a React Native (Expo) mobile frontend with TypeScript, a hardened Node.js/Express TypeScript backend, Prisma ORM backed by PostgreSQL, exact monetary calculations, mock OTP authentication, and an optional receipt upload bonus feature.
 
 ---
+LINK : https://miniledger-dp5n.vercel.app/
 
 ## ⚡ Quick Start: How to Run in 10 Seconds
 
